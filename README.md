@@ -1,1 +1,1 @@
-# shogi-piece-classifier
+# Shogi-piece-classifier
