@@ -130,3 +130,6 @@ dmypy.json
 
 # vscode
 .vscode/
+
+# train images
+train_images/
