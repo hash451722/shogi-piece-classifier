@@ -11,7 +11,7 @@ from torch.optim.lr_scheduler import StepLR
 import torchvision
 
 import dataset
-from model import Net, mobilenet, onnx_export
+from model import mobilenet, onnx_export
 
 
 
@@ -32,9 +32,8 @@ def data_loader(args):
 
     transform = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Grayscale(),
             torchvision.transforms.Resize((64, 64)),
-            torchvision.transforms.Normalize((stats["mean"]), (stats["std"]))  # Standardization (Mean, Standard deviations)
+            # torchvision.transforms.Normalize((stats["mean"]), (stats["std"]))  # Standardization (Mean, Standard deviations)
         ])
 
     images = dataset.ShogiPieceDataset(path_train_images, transform)
@@ -79,14 +78,15 @@ def transforms_augmentation(mean:float=0.0, std:float=1.0):
     return transforms
 
 
-def train(args, model, device, train_loader, optimizer, epoch):
+def train(args, model, device, train_loader, criterion, optimizer, epoch):
     model.train()
     for i, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         data = transforms_augmentation()(data)
         optimizer.zero_grad()
         output = model(data)
-        loss = torch.nn.functional.nll_loss(output, target)
+        # loss = torch.nn.functional.nll_loss(output, target)
+        loss = criterion(output, target)
         loss.backward()
         optimizer.step()
         if i % args.log_interval == 0:
@@ -98,7 +98,7 @@ def train(args, model, device, train_loader, optimizer, epoch):
                 )
     
 
-def validate(model, device, test_loader, create_cm=False):
+def validate(model, device, test_loader, criterion, create_cm=False):
     model.eval()
     loss = 0
     correct = 0
@@ -150,25 +150,30 @@ def training():
     train_loader, val_loader, classes_ids = data_loader(args)
     num_classes = len(classes_ids)
 
-    model = Net(num_classes).to(device)
+    model = mobilenet("v3large", num_classes).to(device)
     optimizer = torch.optim.Adadelta(model.parameters(), lr=args.lr)
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
+
+
+    criterion  = torch.nn.CrossEntropyLoss()
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
+
 
     best_accuracy = 0.0
     best_model = None
     for epoch in range(1, args.epochs + 1):
-        train(args, model, device, train_loader, optimizer, epoch)
-        accuracy, _, _ = validate(model, device, val_loader)
+        train(args, model, device, train_loader, criterion, optimizer, epoch)
+        accuracy, _, _ = validate(model, device, val_loader, criterion)
         scheduler.step()
         if accuracy > best_accuracy:
             best_model = copy.deepcopy(model)
 
     # Save model
     torch.save(best_model.state_dict(), path_models_dir.joinpath("piece.pt"))
-    onnx_export(best_model, device, path_models_dir.joinpath("piece.onnx")) 
+    onnx_export(best_model, device, path_models_dir.joinpath("piece.onnx"), 1, 3, 64, 64) 
 
     # Confusion matrix
-    accuracy, predicted_class, true_class = validate(model, device, val_loader, create_cm=True)
+    accuracy, predicted_class, true_class = validate(model, device, val_loader, criterion, create_cm=True)
     cm = create_cm(num_classes, predicted_class, true_class)
     plot_confusion_matrix( cm, list(classes_ids) )
 

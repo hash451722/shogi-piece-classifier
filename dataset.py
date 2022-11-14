@@ -32,7 +32,6 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
 
 
     def __len__(self) -> int:
-        # return len(self.img_path_list)
         return len(self.imgs)
 
 
@@ -153,7 +152,6 @@ if __name__ == '__main__':
         ])
 
     ds = ShogiPieceDataset(path_img, transforms=transform)
-
 
     print(ds)
     print(type(ds))

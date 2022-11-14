@@ -3,6 +3,7 @@ import pathlib
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torchvision
 
 
 
@@ -31,7 +32,6 @@ class Net(nn.Module):
         return x
 
 
-
 def load_pretrained_model(path_pt:pathlib.Path ,num_classes:int=29):
     '''
     Load pre-trained model
@@ -58,6 +58,24 @@ def load_pretrained_model(path_pt:pathlib.Path ,num_classes:int=29):
 
 
 
+
+def mobilenet(model:str="v3small", num_classes:int=29):
+    if model == "v2":
+        net = torchvision.models.mobilenet_v2()
+    elif model == "v3large":
+        net = torchvision.models.mobilenet_v3_large()
+    else:
+        net = torchvision.models.mobilenet_v3_small()
+
+    if num_classes is not None:
+        net.classifier[-1] = nn.Linear(net.classifier[-1].in_features, out_features=num_classes)
+
+    return net
+
+
+
+
+
 def onnx_export(model, device="cpu", filename="piece.onnx", bs=1, channels=1, height=64, width=64):
     dummy_input = torch.randn(bs, channels, height, width, requires_grad=True).to(device)
     model.eval()
@@ -67,7 +85,7 @@ def onnx_export(model, device="cpu", filename="piece.onnx", bs=1, channels=1, he
         dummy_input,               # model input (or a tuple for multiple inputs)
         filename,                  # where to save the model (can be a file or file-like object)
         export_params=True,        # store the trained parameter weights inside the model file
-        opset_version=10,          # the ONNX version to export the model to
+        opset_version=11,          # the ONNX version to export the model to
         do_constant_folding=True,  # whether to execute constant folding for optimization
         input_names = ['input'],   # the model's input names
         output_names = ['output'], # the model's output names
@@ -77,20 +95,39 @@ def onnx_export(model, device="cpu", filename="piece.onnx", bs=1, channels=1, he
 
 
 if __name__ == '__main__':
-    model = Net()
+    # model = Net()
 
-    data = torch.randn(81, 1, 64, 64)  # 0-1
-    output = model( data )
+    # data = torch.randn(81, 1, 64, 64)  # 0-1
+    # output = model( data )
 
-    print(output)
+    # print(output)
+    # print(model)
+
+    # model.output_layer = nn.Linear(in_features=model.output_layer.in_features, out_features=2)
+    # print(model)
+
+
+    # for name, param in model.named_parameters():
+    #     print('name  : ', name)
+    #     # print('param : ', param)
+
+    # # onnx_export(model)
+
+
+
+    model = mobilenet(model="v3small", num_classes=29)
+    data = torch.randn(81, 3, 64, 64)  # 0-1
+    model.eval()
+    output = model(data)
     print(model)
+    # print(output)
+    print(output.shape)
 
-    model.output_layer = nn.Linear(in_features=model.output_layer.in_features, out_features=2)
-    print(model)
+    print(type(model))
+
+    onnx_export(model, filename="mobilenetv3small__.onnx", channels=3)
 
 
-    for name, param in model.named_parameters():
-        print('name  : ', name)
-        # print('param : ', param)
 
-    # onnx_export(model)
+    # Reference
+    # https://arxiv.org/abs/1905.02244
