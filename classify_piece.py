@@ -17,7 +17,7 @@ class ClassifyPiece():
     def run(self, img:np.ndarray) -> list:
         '''
         マス目で切り出された81個の画像の駒種を分類する. onnx使用.
-        input  : (81, 1, 64, 64)
+        input  : (81, 1, 64, 64)  (batch_size, channels, height, width)
         return : 81マスの駒予測値(3文字で表現、頭文字は先手:b, 後手:w, 空きマスはemp (empty))
         '''
         ort_session = ort.InferenceSession(str(self.path_piece_onnx), providers=['CPUExecutionProvider'])
