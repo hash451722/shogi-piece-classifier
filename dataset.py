@@ -89,42 +89,68 @@ def _sample_images(dataloader, mean:float=0.0, std:float=1.0):
         # img_pil.show()
 
 
-def statistics(path_img_dir:pathlib.Path, save:bool=True) -> dict:
+def statistics(path_img_dir:pathlib.Path) -> dict:
     transform_basic = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Grayscale(),
             torchvision.transforms.Resize((64, 64)),
         ])
 
     ds = ShogiPieceDataset(path_img_dir, transforms=transform_basic)
     num_class = ds.class_to_idx.copy()
-    num_class = {k: 0 for k in num_class.keys()}
+    num_class = {k: 0 for k in num_class.keys()}  # 各クラスの画像数
 
-    mean_sum = 0
-    std_sum = 0
+    mean_r = 0
+    mean_g = 0
+    mean_b = 0
+    std_r = 0
+    std_g = 0
+    std_b = 0
     for (img, idx) in ds:
         cls = ds.idx_to_class[str(idx)]
         num_class[cls] += 1
 
-        mean_sum += torch.mean(img)
-        std_sum += torch.std(img)
+        mean_r += torch.mean(img[0])
+        mean_g += torch.mean(img[1])
+        mean_b += torch.mean(img[2])
+        std_r += torch.std(img[0])
+        std_g += torch.std(img[1])
+        std_b += torch.std(img[2])
 
-    mean = mean_sum / len(ds)
-    std = std_sum / len(ds)
-
+    mean_r = mean_r / len(ds)
+    mean_g = mean_g / len(ds)
+    mean_b = mean_b / len(ds)
+    std_r = std_r / len(ds)
+    std_g = std_g / len(ds)
+    std_b = std_b / len(ds)
 
     stats = {
-        "mean":mean.to('cpu').detach().numpy().copy().item(),
-        "std":std.to('cpu').detach().numpy().copy().item(),
+        "mean":{
+            "r":mean_r.to('cpu').detach().numpy().copy().item(),
+            "g":mean_g.to('cpu').detach().numpy().copy().item(),
+            "b":mean_b.to('cpu').detach().numpy().copy().item()
+            },
+        "std":{
+            "r":std_r.to('cpu').detach().numpy().copy().item(),
+            "g":std_g.to('cpu').detach().numpy().copy().item(),
+            "b":std_b.to('cpu').detach().numpy().copy().item()
+            },
         "num_data":len(ds),
         "num_class":num_class
         }
-
-    if save:
-        with open(path_img_dir.joinpath("stats.pickle"), 'wb') as f:
-            pickle.dump(stats, f)
-
     return stats
+
+
+
+def pack_piece_img():
+    '''
+    駒種ごとに1ファイルにまとめる
+    '''
+    path_current_dir = pathlib.Path(__file__).parent
+    path_img = path_current_dir.joinpath("sa")
+
+
+
+
 
 
 
@@ -132,21 +158,24 @@ def statistics(path_img_dir:pathlib.Path, save:bool=True) -> dict:
 
 if __name__ == '__main__':
     path_current_dir = pathlib.Path(__file__).parent
-    path_img = path_current_dir.joinpath("train_images_original")
+    path_img_dir = path_current_dir.joinpath("train_images")
 
-
-    _stats = statistics(path_img)
+    _stats = statistics(path_img_dir)
     # print(_stats)
 
-    with open(path_img.joinpath("stats.pickle"), mode="rb") as f:
-        stats = pickle.load(f)
+    with open(path_img_dir.joinpath("stats.pickle"), 'wb') as f:
+        pickle.dump(_stats, f)
 
+
+    
+    with open(path_img_dir.joinpath("stats.pickle"), mode="rb") as f:
+        stats = pickle.load(f)
     print(stats)
+    exit()
 
 
     transform = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Grayscale(),
             torchvision.transforms.Resize((64, 64)),
             # torchvision.transforms.Normalize((stats["mean"]), (stats["std"]))  # Standardization (Mean, Standard deviations)
         ])
