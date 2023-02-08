@@ -11,7 +11,7 @@ class ClassifyPiece():
         path_current_dir = pathlib.Path(__file__).parent
         self.path_piece_onnx = path_current_dir.joinpath("models", "piece.onnx")
         self.path_pickle = path_current_dir.joinpath("models", "classes.pickle")
-        self.idx_to_class = self._idx_to_class()
+        self.class_to_idx, self.idx_to_class = self._idx_to_class()
 
 
     def run(self, img:np.ndarray) -> list:
@@ -29,8 +29,9 @@ class ClassifyPiece():
         # print(np.exp(preds))
         # print(np.sum(np.exp(preds)))  # 81
         preds_idx = np.argmax(preds, axis=1)  # 最も高い確率の駒idxだけ取り出す
-        list81 = self._convert_idx_to_class(list(preds_idx))  # 3文字のクラス名に変換
-        return list81
+        # list81 = self._convert_idx_to_class(list(preds_idx))  # 3文字のクラス名に変換
+        # return list81
+        return preds_idx
 
 
     def _convert_idx_to_class(self, predicted_idx:list) -> list:
@@ -47,7 +48,7 @@ class ClassifyPiece():
         d = {}
         for k, v in classes.items():
             d[str(v)] = k
-        return d
+        return classes, d 
 
 
 
@@ -56,6 +57,6 @@ if __name__ == "__main__":
     img_cells_dummy = np.random.randn(81, 3, 64, 64)  # (N, C, H, W)
 
     cp = ClassifyPiece()
-    list81 = cp.run(img_cells_dummy)
-    print(len(list81))
-    print(list81)
+    # list81 = cp.run(img_cells_dummy)
+    # print(len(list81))
+    # print(list81)

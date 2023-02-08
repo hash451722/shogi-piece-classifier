@@ -58,7 +58,7 @@ def args_():
                         help='input batch size for training (default: 32)')
     parser.add_argument('--test-batch-size', type=int, default=32, metavar='N',
                         help='input batch size for testing (default: 32)')
-    parser.add_argument('--epochs', type=int, default=1, metavar='N',
+    parser.add_argument('--epochs', type=int, default=20, metavar='N',
                         help='number of epochs to train (default: 20)')
     parser.add_argument('--lr', type=float, default=1.0, metavar='LR',
                         help='learning rate (default: 1.0)')
@@ -116,9 +116,6 @@ def validate(model, device, test_loader, criterion, create_cm=False):
     loss = 0
     correct = 0
 
-    predicted_class = torch.empty(0, dtype=torch.int64).to(device)  # confusion matrix
-    true_class = torch.empty(0, dtype=torch.int64).to(device)  # confusion matrix
-
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
@@ -130,10 +127,7 @@ def validate(model, device, test_loader, criterion, create_cm=False):
 
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
-            
-            if create_cm:
-                predicted_class = torch.cat([predicted_class, torch.argmax(output, dim=1)], dim=0)
-                true_class = torch.cat([true_class, target], dim=0)  # torch.int64
+
 
     loss /= len(test_loader.dataset)
     accuracy = correct / len(test_loader.dataset)
@@ -143,7 +137,7 @@ def validate(model, device, test_loader, criterion, create_cm=False):
         len(test_loader.dataset),
         100. * accuracy))
 
-    return loss, accuracy, predicted_class.to('cpu'), true_class.to('cpu')
+    return loss, accuracy
 
 
 def training():
@@ -181,8 +175,8 @@ def training():
     best_model = None
     for epoch in range(1, args.epochs + 1):
         train_loss, train_accuracy = train(args, model, device, train_loader, criterion, optimizer, epoch)
-        val_loss, val_accuracy, _, _ = validate(model, device, val_loader, criterion)
-        
+        val_loss, val_accuracy = validate(model, device, val_loader, criterion)
+
         history["epoch"].append(epoch)
         history["train_loss"].append(train_loss)
         history["train_accuracy"].append(train_accuracy)
@@ -198,12 +192,7 @@ def training():
 
     # Save model
     torch.save(best_model.state_dict(), path_models_dir.joinpath("piece.pt"))
-    onnx_export(best_model, path_models_dir.joinpath("piece.onnx")) 
-
-    # Confusion matrix
-    val_loss, val_accuracy, predicted_class, true_class = validate(model, device, val_loader, criterion, create_cm=True)
-    cm = create_cm(num_classes, predicted_class, true_class)
-    plot_confusion_matrix( cm, list(classes_ids) )
+    onnx_export(best_model.to("cpu"), path_models_dir.joinpath("piece.onnx")) 
 
 
 
@@ -234,38 +223,6 @@ def plot_history(history):
     plt.savefig(path_plot)
     # plt.show()
 
-
-
-def create_cm(num_classes, predicted_class, true_class):
-    '''
-    Confusion matrix for multi-class classification
-    '''
-    cm = np.zeros((num_classes, num_classes), dtype=int)
-    for i in range( true_class.size(0) ):
-        p = predicted_class[i].item()
-        t = true_class[i].item()
-        cm[t, p] += 1
-    return cm
-
-
-def plot_confusion_matrix(cm, classes):
-    plt.clf()
-    plt.matshow(cm, fignum=False, cmap="Blues", vmin=0)
-    num_classes = len(classes)
-    plt.xticks(np.arange(num_classes), classes)
-    plt.yticks(np.arange(num_classes), classes)
-
-    plt.colorbar()
-    plt.grid(False)
-
-    plt.title("Confusion matrix")
-    plt.xlabel("Predicted class")
-    plt.ylabel("True class")
-    # plt.gca().xaxis.set_ticks_position('bottom')
-
-    path_current_dir = pathlib.Path(__file__).parent
-    png_path = pathlib.Path(path_current_dir.joinpath("models", "confusion_matrix.png"))
-    plt.savefig(png_path)
 
 
 
