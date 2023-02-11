@@ -10,6 +10,12 @@ MobileNet
 
 
 
+## Training images
+
+In the train_images directory, images of shogi board and pieces owned by the repository owner are placed as sample images for learning purposes.
+
+
+
 
 
 ## Refereces

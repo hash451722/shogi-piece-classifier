@@ -2,6 +2,7 @@ import argparse
 import copy
 import pathlib
 import pickle
+import json
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,25 +21,27 @@ def save_pickle(obj, path):
     with open(path, mode='wb') as f:
         pickle.dump(obj,f)
 
+def save_dataset_info(ds, path_json):
+    d = {
+            "stats":{
+                "mean":list(ds.mean),
+                "std":list(ds.std)
+            },
+            "label_to_idx":ds.class_to_idx,
+            "idx_to_label":ds.idx_to_class
+        }
+    with open(path_json, 'w') as f:
+        json.dump(d, f, indent=4)
+
 
 def data_loader(args):
-
     path_current_dir = pathlib.Path(__file__).parent
     path_train_images = path_current_dir.joinpath("train_images")
 
-    with open(path_train_images.joinpath("stats.pickle"), mode="rb") as f:
-        stats = pickle.load(f)
-
-
-    transform = torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Resize((64, 64)),
-            # torchvision.transforms.Normalize((stats["mean"]), (stats["std"]))  # Standardization (Mean, Standard deviations)
-        ])
-
-    images = dataset.ShogiPieceDataset(path_train_images, transform)
+    images = dataset.ShogiPieceDataset(path_train_images)
 
     save_pickle(images.class_to_idx, path_current_dir.joinpath("models", "classes.pickle"))
+    save_dataset_info(images, path_current_dir.joinpath("models", "dataset_info.json"))
 
     n_images = len(images)
     train_size = int( n_images * 0.8 )
@@ -70,9 +73,20 @@ def args_():
     return args
 
 
+class Args():
+    def __init__(self) -> None:
+        self.batch_size = 32
+        self.test_batch_size = 32
+        self.epochs = 20
+        self.lr = 1.0
+        self.gamma = 0.7
+        self.log_interval = 10
+ 
+
+
 def transforms_augmentation(mean:float=0.0, std:float=1.0):
     transforms = torchvision.transforms.Compose([
-            torchvision.transforms.RandomRotation(degrees=(20), fill=(0.0-mean)/std),
+            torchvision.transforms.RandomRotation(degrees=(10), fill=(0.0-mean)/std),
             torchvision.transforms.RandomErasing()
         ])
     return transforms
@@ -96,7 +110,6 @@ def train(args, model, device, train_loader, criterion, optimizer, epoch):
         epoch_loss += loss.item() * data.size(0)
         pred = output.argmax(dim=1, keepdim=True)  # get the index of the max probability
         epoch_corrects += pred.eq(target.view_as(pred)).sum().item()
-
         
         if i % args.log_interval == 0:
             print("Train Epoch: {:3d} [{:6d} / {:6d} ({:3.0f}%)]   Loss: {:.6f}".format(
@@ -111,7 +124,7 @@ def train(args, model, device, train_loader, criterion, optimizer, epoch):
     return epoch_loss, accuracy
     
 
-def validate(model, device, test_loader, criterion, create_cm=False):
+def validate(model, device, test_loader, criterion):
     model.eval()
     loss = 0
     correct = 0
@@ -145,14 +158,15 @@ def training():
     Main function
     '''
     # Training settings
-    args = args_()
+    # args = args_()
+    args = Args()
 
     # Make models directory
     path_current_dir = pathlib.Path(__file__).parent
     path_models_dir = path_current_dir.joinpath("models")
     path_models_dir.mkdir(exist_ok=True)
 
-    torch.manual_seed(123)
+    torch.manual_seed(451722)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

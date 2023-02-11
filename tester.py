@@ -10,6 +10,7 @@ from sklearn.metrics import confusion_matrix, precision_score
 import classify_piece_tester
 
 
+
 class OnnxTester():
     def __init__(self) -> None:
         self.cp = classify_piece_tester.ClassifyPiece()
@@ -47,8 +48,8 @@ class OnnxTester():
 
 
     def run(self):
-        pred_labels = self.cp.run(self.test_imgs)
-        self.plot_confusion_matrix(self.test_labels, pred_labels, self.labels)
+        pred_idx = self.cp.run(self.test_imgs)
+        self.plot_confusion_matrix(self.test_labels, pred_idx, self.labels)
 
 
     def plot_confusion_matrix(self, y_true:np.ndarray, y_pred:np.ndarray, labels:np.ndarray, path_file:pathlib.Path=None) -> None:
@@ -62,16 +63,6 @@ class OnnxTester():
         plt.title("Precision=" + str(precision))
         plt.savefig(path_file)
 
-
-
-
-def read_img():
-    path_current_dir = pathlib.Path(__file__).parent
-    path_img = path_current_dir.joinpath("train_images", "hi", "1_10.png")
-
-    with open(path_img, "rb") as f:
-        img_base64 = base64.b64encode(f.read()).decode("utf-8")
-    print(img_base64)
 
 
 
