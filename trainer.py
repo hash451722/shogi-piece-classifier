@@ -239,7 +239,5 @@ def plot_history(history):
 
 
 
-
-
 if __name__ == '__main__':
     training()
