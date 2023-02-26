@@ -132,4 +132,4 @@ dmypy.json
 .vscode/
 
 # train images
-train_images/
+images/

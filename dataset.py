@@ -1,5 +1,4 @@
 import pathlib
-import pickle
 
 import torch
 import torchvision
@@ -125,7 +124,7 @@ def _sample_images(dataloader, mean:float=0.0, std:float=1.0):
 
 if __name__ == '__main__':
     path_current_dir = pathlib.Path(__file__).parent
-    path_img_dir = path_current_dir.joinpath("train_images")
+    path_img_dir = path_current_dir.joinpath("images", "train_validate")
 
     ds = ShogiPieceDataset(path_img_dir)
     loader = torch.utils.data.DataLoader(ds, batch_size=32, shuffle=True)
