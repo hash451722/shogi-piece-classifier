@@ -11,6 +11,7 @@ class ClassifyPiece():
         path_current_dir = pathlib.Path(__file__).parent
         self.path_piece_onnx = path_current_dir.joinpath("models", "piece.onnx")
         path_ds_info_json = path_current_dir.joinpath("models", "dataset_info.json")
+        
         ds_info = self._load_dataset_info(path_ds_info_json)
         self.label_to_idx = ds_info["label_to_idx"]
         self.idx_to_label = ds_info["idx_to_label"]
