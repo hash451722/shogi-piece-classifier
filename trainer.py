@@ -1,12 +1,9 @@
 import argparse
 import copy
 import pathlib
-import pickle
 import json
 
 import matplotlib.pyplot as plt
-import numpy as np
-
 import torch
 from torch.optim.lr_scheduler import StepLR
 import torchvision
@@ -15,11 +12,6 @@ import dataset
 from model import network, onnx_export
 
 
-
-
-def save_pickle(obj, path):
-    with open(path, mode='wb') as f:
-        pickle.dump(obj,f)
 
 def save_dataset_info(ds, path_json):
     d = {
@@ -40,7 +32,6 @@ def data_loader(args):
 
     images = dataset.ShogiPieceDataset(path_train_images)
 
-    save_pickle(images.class_to_idx, path_current_dir.joinpath("models", "classes.pickle"))
     save_dataset_info(images, path_current_dir.joinpath("models", "dataset_info.json"))
 
     n_images = len(images)

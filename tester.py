@@ -84,7 +84,7 @@ class OnnxTester():
         cm_disp = sklearn.metrics.ConfusionMatrixDisplay(cm, display_labels=labels)
         cm_disp.plot(cmap=plt.cm.Blues)
         if path_png is None:
-            path_png = self.path_models_dir.joinpath("cm_001.png")
+            path_png = self.path_models_dir.joinpath("confusion_matrix.png")
 
         precision = sklearn.metrics.precision_score(y_true, y_pred, average='micro')
         plt.title("Precision=" + str(precision))
