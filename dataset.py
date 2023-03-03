@@ -32,7 +32,7 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         return transform
 
 
-    def __getitem__(self, index:int) -> tuple[np.ndarray, str]:
+    def __getitem__(self, index:int) -> tuple:  # tuple[np.ndarray, str]
         label = self.labels[index]
         img = self.imgs[index]
         img = np.array(img)
@@ -45,7 +45,7 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         return len(self.imgs)
 
 
-    def _preprocess(self, img_path_list:list[pathlib.Path]) -> None:
+    def _preprocess(self, img_path_list:list) -> None:
         mean_sum = np.array([0, 0, 0])
         std_sum = np.array([0, 0, 0])
 
