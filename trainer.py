@@ -13,14 +13,15 @@ from model import network, onnx_export
 
 
 
-def save_dataset_info(ds, path_json):
+def save_dataset_info(ds, path_json) -> None:
     d = {
             "stats":{
-                "mean":list(ds.mean),
-                "std":list(ds.std)
+                "mean": list(ds.mean),
+                "std": list(ds.std)
             },
-            "label_to_idx":ds.class_to_idx,
-            "idx_to_label":ds.idx_to_class
+            "label_to_idx": ds.class_to_idx,
+            "idx_to_label": ds.idx_to_class,
+            "count": ds.count
         }
     with open(path_json, 'w') as f:
         json.dump(d, f, indent=4)
@@ -201,7 +202,7 @@ def training():
 
 
 
-def plot_history(history):
+def plot_history(history) -> None:
     '''
     Plot loss, accuracy
     '''

@@ -23,7 +23,7 @@ class OnnxTester():
         self.true_labels, self.test_imgs = self.preprocess(path_imgs_list, self.cp.mean, self.cp.std)
 
 
-    def list_test_images(self, data_dir:pathlib.Path) -> list:
+    def list_test_images(self, data_dir:pathlib.Path) -> list[pathlib.Path]:
         path_list = list(data_dir.glob('**/*.png')) + list(data_dir.glob('**/*.jpg'))
         return path_list
 
