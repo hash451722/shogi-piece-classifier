@@ -13,8 +13,6 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         self.each_num = None  # Number of data per label
         self.class_to_idx = None  # dict
         self.idx_to_class = None  # dict
-        # path_dataset = data_dir.joinpath("train_validate.npz")
-        # data_dict = self.load_npz(path_dataset)
         data_dict = self.load_npz(data_dir)
         self.labels = []
         self.imgs = []
@@ -27,12 +25,7 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         self._idx_to_class()
 
 
-    # def load_npz(self, path_npz:pathlib.Path) -> np.lib.npyio.NpzFile:
-    #     pieces_np = np.load(path_npz)
-    #     return pieces_np
-    
-
-    def load_npz(self, path_dir:pathlib.Path):
+    def load_npz(self, path_dir:pathlib.Path) -> dict:
         pieces = ["em", "fu", "gi", "hi", "ka", "ke", "ki", "ky", "ng", "nk", "ny", "ou", "ry", "to", "um"]
         d = {}
         for piece in pieces:
