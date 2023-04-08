@@ -22,9 +22,9 @@ class ClassifyPiece():
         self.bgr2rgb = bgr2rgb  # Convert BGR to RGB
 
 
-    def run(self, imgs:np.ndarray, output_type:str="label") -> list:
+    def run(self, imgs:np.ndarray, output_type:str="label", threshold:float=None) -> list:
         '''
-        マス目で切り出されたn個の画像の駒種を分類する. use onnx.
+        Classify the piece species of the n images cut out in squares. Use onnx.
         imgs : (n, 64, 64, 3)  (batch_size, height, width, channels) (0-255) (R, G, B)
         output_type : 予測結果の戻り値, "label" or "idx"
         return : Predicted pieces for n-squares(3文字で表現、頭文字は先手:b, 後手:w, 空きマスはemp (empty))
@@ -42,32 +42,36 @@ class ClassifyPiece():
         preds = np.argmax(preds, axis=1)  # Only take out the piece index with the highest probability
         # print(preds)
         # print(preds.dtype)
+
+        if threshold is None:
+            threshold = self.threshold
+
         if output_type == "label":
-            preds = self._convert_idx_to_label(list(preds), list(reliability))  # Converts to 3-letter label names
+            preds = self._convert_idx_to_label(list(preds), list(reliability), threshold)  # Converts to 3-letter label names
         elif output_type == "idx":
-            preds = self._exclude_unreliable(list(preds), list(reliability))
+            preds = self._exclude_unreliable(list(preds), list(reliability), threshold)
         else:
             pass
         return preds
 
 
-    def _convert_idx_to_label(self, predicted_idx:list, reliability:list) -> list:
+    def _convert_idx_to_label(self, predicted_idx:list, reliability:list, threshold:float) -> list:
         '''
         Below the threshold is "----".
         '''
         predicted_label = []
         for idx, r in zip(predicted_idx, reliability):
-            if r > self.threshold:
-                predicted_label.append( self.idx_to_label[str(idx)] )
-            else:
+            if r < threshold:
                 predicted_label.append("---")
+            else:
+                predicted_label.append( self.idx_to_label[str(idx)] )
         return predicted_label
     
 
-    def _exclude_unreliable(self, predicted_idx:list, reliability:list) -> list:
+    def _exclude_unreliable(self, predicted_idx:list, reliability:list, threshold:float) -> list:
         predicted_label = []
         for idx, r in zip(predicted_idx, reliability):
-            if r > self.threshold:
+            if r > threshold:
                 predicted_label.append( idx )
             else:
                 predicted_label.append( -1 )
@@ -92,7 +96,7 @@ class ClassifyPiece():
         '''
         imgs : (n, H, W, C) (0-255) (RGB) or (BGR)
         '''
-        # Convert color bgr to rgb
+        # Convert color BGR to RGB
         if self.bgr2rgb:
             imgs = imgs[:, :, :, [2, 1, 0]]
 
@@ -107,10 +111,10 @@ class ClassifyPiece():
 
 
 if __name__ == "__main__":
-    img_cells_dummy = np.random.randint(0, 256, (81, 64, 64, 3))  # n, H, W, C
+    imgs_dummy = np.random.randint(0, 256, (81, 64, 64, 3))  # n, H, W, C
     
     cp = ClassifyPiece()
-    # list81 = cp.run(img_cells_dummy, "label")
-    list81 = cp.run(img_cells_dummy, "idx")
+    list81 = cp.run(imgs_dummy, "label", threshold=0.7)
+    # list81 = cp.run(imgs_dummy, "idx", threshold=0.8)
     print(len(list81))
     print(list81)
