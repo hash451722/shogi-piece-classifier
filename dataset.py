@@ -75,7 +75,7 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
     def _transforms(self):
         transform = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
-            torchvision.transforms.Resize((64, 64)),
+            torchvision.transforms.Resize((64, 64), antialias=True),
             torchvision.transforms.Normalize(self.mean , self.std)  # Standardization (Mean, Standard deviations)
         ])
         return transform
