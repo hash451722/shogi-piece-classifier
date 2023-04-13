@@ -69,7 +69,7 @@ class Args():
     def __init__(self) -> None:
         self.batch_size = 32
         self.test_batch_size = 32
-        self.epochs = 20
+        self.epochs = 2
         self.lr = 1.0
         self.gamma = 0.7
         self.log_interval = 10
@@ -165,7 +165,7 @@ def training():
     train_loader, val_loader, classes_ids = data_loader(args)
     num_classes = len(classes_ids)
 
-    model = network("mobilenet_v3_large", num_classes).to(device)
+    model = network("efficientnet_v2_s", num_classes).to(device)
     if model is None:
         print("ERROR: The selected model is not defined.")
         exit()

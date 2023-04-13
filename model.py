@@ -12,6 +12,8 @@ def network(model:str="mobilenet_v3_large", num_classes:int=29):
         net = torchvision.models.mobilenet_v3_small()
     elif model == "mobilenet_v3_large":
         net = torchvision.models.mobilenet_v3_large()
+    elif model == "efficientnet_v2_s":
+        net = torchvision.models.efficientnet_v2_s()
     else:
         return None
     
@@ -43,7 +45,8 @@ def onnx_export(model, filename:str, bs:int=1, channels:int=3, height:int=64, wi
 if __name__ == '__main__':
     dummy_data = torch.randn(81, 3, 64, 64)  # 0-1
 
-    model = network(model="mobilenet_v3_large", num_classes=29)
+    # model = network(model="mobilenet_v3_large", num_classes=29)
+    model = network(model="efficientnet_v2_s", num_classes=29)
     model.eval()
     output = model(dummy_data)
 
@@ -54,6 +57,7 @@ if __name__ == '__main__':
     print(output.shape)
 
     # onnx_export(model, filename="mobilenet_v3_large.onnx")
+    onnx_export(model, filename="efficientnet_v2_s.onnx")
 
     # for name, param in model.named_parameters():
     #     print('name  : ', name)

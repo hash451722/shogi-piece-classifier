@@ -10,10 +10,14 @@ import numpy as np
 class ShogiPieceDataset(torch.utils.data.Dataset):
     def __init__(self, data_dir:pathlib.Path) -> None:
         super().__init__()
-        self.each_num = None  # Number of data per label
         self.class_to_idx = None  # dict
         self.idx_to_class = None  # dict
         data_dict = self.load_npz(data_dir)
+
+        data_dict = self.undersampling(data_dict)
+
+        # return
+
         self.labels = []
         self.imgs = []
         self.mean = None
@@ -32,6 +36,40 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
             path_npz = path_dir.joinpath(piece + ".npz")
             d.update(np.load(path_npz))
         return d
+
+
+    def undersampling(self, data:dict=None, method:str="ave") -> dict:
+        rng = np.random.default_rng(seed=451722)
+
+        num = []
+        for k, v in data.items():
+            print(k, v.shape[0])
+            num.append(v.shape[0])
+
+        
+        print(num)
+
+        if method == "ave":
+            n_max = int(sum(num) / len(num))
+
+        if method == "max":
+            n_max = sorted(num)[1]  # 2nd
+
+
+        else:
+            n_max = 1000
+
+
+        data["em"] = rng.choice(data["em"], n_max, replace=False)
+
+        # print(data["em"].shape)
+        # print(type(data["em"]))
+
+        return data
+
+
+
+
 
 
     def _transforms(self):
@@ -154,12 +192,40 @@ if __name__ == '__main__':
     path_img_dir = path_current_dir.joinpath("images", "train_validate")
 
     ds = ShogiPieceDataset(path_img_dir)
-    loader = torch.utils.data.DataLoader(ds, batch_size=32, shuffle=True)
 
-    for i, (data, target) in enumerate(loader):
-        print(type(data))
-        print(data.shape)
-        break
+    # n_images = len(ds.imgs)
+    # train_size = int( n_images * 0.8 )
+    # val_size = n_images - train_size
+    # train_dataset, val_dataset = torch.utils.data.random_split(ds, [train_size, val_size])
+
+
+
+
+
+    print(ds.count)
+    print(len(ds.imgs))
+
+    # emp = 0
+    # bny = 0
+    # wny = 0
+    # for img, label in train_dataset:
+        
+    #     if label == 24:
+    #         wny += 1
+
+    #     # print(label)
+    #     # break
+
+
+    # print(wny)
+
+
+
+    # loader = torch.utils.data.DataLoader(ds, batch_size=32, shuffle=True)
+    # for i, (data, target) in enumerate(loader):
+    #     print(type(data))
+    #     print(data.shape, target.shape)
+    #     break
 
 
     # print(ds.class_to_idx)
