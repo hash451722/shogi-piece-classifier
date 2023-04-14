@@ -6,7 +6,6 @@ import json
 import matplotlib.pyplot as plt
 import torch
 from torch.optim.lr_scheduler import StepLR
-import torchvision
 
 import dataset
 from model import network, onnx_export
@@ -31,20 +30,23 @@ def data_loader(args):
     path_current_dir = pathlib.Path(__file__).parent
     path_train_images = path_current_dir.joinpath("images", "train_validate")
 
-    images = dataset.ShogiPieceDataset(path_train_images)
+    ds = dataset.ShogiPieceDataset(path_train_images)
 
-    save_dataset_info(images, path_current_dir.joinpath("models", "dataset_info.json"))
+    save_dataset_info(ds, path_current_dir.joinpath("models", "dataset_info.json"))
 
-    n_images = len(images)
+    n_images = len(ds)
     train_size = int( n_images * 0.8 )
     val_size = n_images - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(images, [train_size, val_size])
+    train_dataset, valid_dataset = torch.utils.data.random_split(ds, [train_size, val_size])
+
+    train_dataset = dataset.ApplyTransformDataset(train_dataset, ds_type="train", mean=ds.mean, std=ds.std)
+    valid_dataset = dataset.ApplyTransformDataset(valid_dataset, ds_type="valid", mean=ds.mean, std=ds.std)
 
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.test_batch_size, shuffle=False)
+    valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.test_batch_size, shuffle=False)
 
     print("n_images: {} -> train:{}, validate:{}".format(n_images, train_size, val_size))
-    return train_loader, val_loader, images.class_to_idx
+    return train_loader, valid_loader, ds.class_to_idx
 
 
 def args_():
@@ -69,19 +71,11 @@ class Args():
     def __init__(self) -> None:
         self.batch_size = 32
         self.test_batch_size = 32
-        self.epochs = 25
+        self.epochs = 30
         self.lr = 1.0
         self.gamma = 0.7
         self.log_interval = 10
  
-
-
-def transforms_augmentation(mean:float=0.0, std:float=1.0):
-    transforms = torchvision.transforms.Compose([
-            torchvision.transforms.RandomRotation(degrees=(10), fill=(0.0-mean)/std),
-            torchvision.transforms.RandomErasing()
-        ])
-    return transforms
 
 
 def train(args, model, device, train_loader, criterion, optimizer, epoch):
@@ -91,7 +85,6 @@ def train(args, model, device, train_loader, criterion, optimizer, epoch):
 
     for i, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
-        data = transforms_augmentation()(data)
         optimizer.zero_grad()
         output = model(data)
         # loss = torch.nn.functional.nll_loss(output, target)

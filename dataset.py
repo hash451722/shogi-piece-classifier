@@ -14,9 +14,7 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         self.idx_to_class = None  # dict
         data_dict = self.load_npz(data_dir)
 
-        data_dict = self.undersampling(data_dict)
-
-        # return
+        # data_dict = self.undersampling(data_dict)
 
         self.labels = []
         self.imgs = []
@@ -24,7 +22,7 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         self.std = None
         self._preprocess(data_dict)
         self.count = self._count(self.labels)  # dict
-        self.transforms = self._transforms()
+        self.transforms = None
         self._class_to_idx()
         self._idx_to_class()
 
@@ -68,17 +66,6 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         return data
 
 
-
-
-
-
-    def _transforms(self):
-        transform = torchvision.transforms.Compose([
-            torchvision.transforms.ToTensor(),
-            torchvision.transforms.Resize((64, 64), antialias=True),
-            torchvision.transforms.Normalize(self.mean , self.std)  # Standardization (Mean, Standard deviations)
-        ])
-        return transform
 
 
     def __getitem__(self, index:int) -> tuple[np.ndarray, str]:
@@ -163,6 +150,59 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
 
 
 
+
+# Apply transform
+class ApplyTransformDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset, ds_type:str="train", mean:list=[0.5, 0.5, 0.5], std:list=[0.5, 0.5, 0.5]):
+        self.dataset = dataset
+        self.mean = mean
+        self.std = std
+
+        if ds_type == "train":
+            self.transform = self.train_transform()
+        elif ds_type == "valid":
+            self.transform = self.valid_transform()
+        else:
+            self.train_transform = None
+
+
+    def __getitem__(self, idx):
+        img, label = self.dataset[idx]
+        if self.transform:
+            img = self.transform(img)
+        return img, label
+
+
+    def __len__(self):
+        return len(self.dataset)
+
+
+    def train_transform(self):
+        t = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.ToTensor(),
+                torchvision.transforms.Resize((64, 64), antialias=True),
+                # torchvision.transforms.RandomResizedCrop(64),
+                torchvision.transforms.RandomRotation(degrees=(10)),
+                torchvision.transforms.RandomErasing(),
+                torchvision.transforms.Normalize(mean=self.mean, std=self.std),
+            ]
+        )
+        return t
+
+    def valid_transform(self):
+        t = torchvision.transforms.Compose(
+            [
+                torchvision.transforms.ToTensor(),
+                torchvision.transforms.Resize((64, 64), antialias=True),
+                torchvision.transforms.Normalize(mean=self.mean, std=self.std),
+            ]
+        )
+        return t
+
+
+
+
 def disp(img_array:np.ndarray) -> None:
     img = Image.fromarray(img_array)
     img.show()
@@ -177,14 +217,15 @@ def _sample_images(dataloader, mean:float=0.0, std:float=1.0):
     for i in range(2):
         # Load a batch of images
         imgs, _ = next(iter(dataloader))
-        imgs = augmentation(imgs)
+        # imgs = augmentation(imgs)
 
         img = torchvision.utils.make_grid(imgs)
         img_pil = torchvision.transforms.functional.to_pil_image(img)
 
-        img_pil.save("sample_ds" + str(i) + ".png")
-        # img_pil.show()
+        # img_pil.save("sample_ds" + str(i) + ".png")
+        img_pil.show()
 
+        break
 
 
 if __name__ == '__main__':
@@ -193,47 +234,31 @@ if __name__ == '__main__':
 
     ds = ShogiPieceDataset(path_img_dir)
 
-    # n_images = len(ds.imgs)
-    # train_size = int( n_images * 0.8 )
-    # val_size = n_images - train_size
-    # train_dataset, val_dataset = torch.utils.data.random_split(ds, [train_size, val_size])
+    n_images = len(ds.imgs)
+    train_size = int( n_images * 0.8 )
+    val_size = n_images - train_size
+    train_dataset, valid_dataset = torch.utils.data.random_split(ds, [train_size, val_size])
+
+    ds_train = ApplyTransformDataset(train_dataset, ds_type="train", mean=ds.mean, std=ds.std)
+    ds_valid = ApplyTransformDataset(valid_dataset, ds_type="valid", mean=ds.mean, std=ds.std)
+
+    print(len(ds_train))
+    print(len(ds_valid))
+
+
+    img, label = ds_train[0]
+    print(label)
+    print(img.shape)
+    # disp(img)
 
 
 
-
-
-    print(ds.count)
-    print(len(ds.imgs))
-
-    # emp = 0
-    # bny = 0
-    # wny = 0
-    # for img, label in train_dataset:
-        
-    #     if label == 24:
-    #         wny += 1
-
-    #     # print(label)
-    #     # break
-
-
-    # print(wny)
-
-
-
-    # loader = torch.utils.data.DataLoader(ds, batch_size=32, shuffle=True)
-    # for i, (data, target) in enumerate(loader):
+    train_loader = torch.utils.data.DataLoader(ds_train, batch_size=32, shuffle=True)
+    # for i, (data, target) in enumerate(train_loader):
     #     print(type(data))
     #     print(data.shape, target.shape)
     #     break
 
 
-    # print(ds.class_to_idx)
-    # print(type(ds.class_to_idx))
-
-    # print(ds.count)
-    # print(len(ds.count))
-
-    
-    # _sample_images(loader, np.average(ds.mean), np.average(ds.std))
+    # _sample_images(train_loader, np.average(ds.mean), np.average(ds.std))
 
