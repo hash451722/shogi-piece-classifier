@@ -13,7 +13,7 @@ def network(model:str="mobilenet_v3_large", num_classes:int=29):
     elif model == "mobilenet_v3_large":
         net = torchvision.models.mobilenet_v3_large()
     elif model == "efficientnet_v2_s":
-        net = torchvision.models.efficientnet_v2_s()
+        net = torchvision.models.efficientnet_v2_s(weights='DEFAULT')
     else:
         return None
     
