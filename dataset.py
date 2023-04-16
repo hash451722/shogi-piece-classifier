@@ -14,7 +14,8 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         self.idx_to_class = None  # dict
         data_dict = self.load_npz(data_dir)
 
-        # data_dict = self.undersampling(data_dict)
+        data_dict = self.undersampling(data_dict, "ave")
+        # return
 
         self.labels = []
         self.imgs = []
@@ -36,36 +37,29 @@ class ShogiPieceDataset(torch.utils.data.Dataset):
         return d
 
 
-    def undersampling(self, data:dict=None, method:str="ave") -> dict:
+    def undersampling(self, data:dict, method:str="ave") -> dict:
         rng = np.random.default_rng(seed=451722)
 
         num = []
-        for k, v in data.items():
-            print(k, v.shape[0])
-            num.append(v.shape[0])
-
-        
-        print(num)
+        for label, img in data.items():
+            # print(label, img.shape[0])
+            num.append(img.shape[0])
+        # print(num)
 
         if method == "ave":
             n_max = int(sum(num) / len(num))
-
-        if method == "max":
-            n_max = sorted(num)[1]  # 2nd
-
-
+        elif method == "2nd":
+            n_max = sorted(num)[1]  # 2nd[ia]
         else:
-            n_max = 1000
+            n_max = sorted(num)[0]
 
+        for label, img in data.items():
+            if img.shape[0] > n_max:
+                data[label] = rng.choice(data[label], n_max, replace=False)
 
-        data["em"] = rng.choice(data["em"], n_max, replace=False)
-
-        # print(data["em"].shape)
-        # print(type(data["em"]))
-
+        # for label, img in data.items():
+        #     print(label, img.shape[0])
         return data
-
-
 
 
     def __getitem__(self, index:int) -> tuple[np.ndarray, str]:
@@ -234,26 +228,26 @@ if __name__ == '__main__':
 
     ds = ShogiPieceDataset(path_img_dir)
 
-    n_images = len(ds.imgs)
-    train_size = int( n_images * 0.8 )
-    val_size = n_images - train_size
-    train_dataset, valid_dataset = torch.utils.data.random_split(ds, [train_size, val_size])
+    # n_images = len(ds.imgs)
+    # train_size = int( n_images * 0.8 )
+    # val_size = n_images - train_size
+    # train_dataset, valid_dataset = torch.utils.data.random_split(ds, [train_size, val_size])
 
-    ds_train = ApplyTransformDataset(train_dataset, ds_type="train", mean=ds.mean, std=ds.std)
-    ds_valid = ApplyTransformDataset(valid_dataset, ds_type="valid", mean=ds.mean, std=ds.std)
+    # ds_train = ApplyTransformDataset(train_dataset, ds_type="train", mean=ds.mean, std=ds.std)
+    # ds_valid = ApplyTransformDataset(valid_dataset, ds_type="valid", mean=ds.mean, std=ds.std)
 
-    print(len(ds_train))
-    print(len(ds_valid))
-
-
-    img, label = ds_train[0]
-    print(label)
-    print(img.shape)
-    # disp(img)
+    # print(len(ds_train))
+    # print(len(ds_valid))
 
 
+    # img, label = ds_train[0]
+    # print(label)
+    # print(img.shape)
+    # # disp(img)
 
-    train_loader = torch.utils.data.DataLoader(ds_train, batch_size=32, shuffle=True)
+
+
+    # train_loader = torch.utils.data.DataLoader(ds_train, batch_size=32, shuffle=True)
     # for i, (data, target) in enumerate(train_loader):
     #     print(type(data))
     #     print(data.shape, target.shape)

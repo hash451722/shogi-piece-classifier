@@ -36,8 +36,8 @@ def data_loader(args):
 
     n_images = len(ds)
     train_size = int( n_images * 0.8 )
-    val_size = n_images - train_size
-    train_dataset, valid_dataset = torch.utils.data.random_split(ds, [train_size, val_size])
+    valid_size = n_images - train_size
+    train_dataset, valid_dataset = torch.utils.data.random_split(ds, [train_size, valid_size])
 
     train_dataset = dataset.ApplyTransformDataset(train_dataset, ds_type="train", mean=ds.mean, std=ds.std)
     valid_dataset = dataset.ApplyTransformDataset(valid_dataset, ds_type="valid", mean=ds.mean, std=ds.std)
@@ -45,7 +45,7 @@ def data_loader(args):
     train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     valid_loader = torch.utils.data.DataLoader(valid_dataset, batch_size=args.test_batch_size, shuffle=False)
 
-    print("n_images: {} -> train:{}, validate:{}".format(n_images, train_size, val_size))
+    print("n_images: {} -> train:{}, validate:{}".format(n_images, train_size, valid_size))
     return train_loader, valid_loader, ds.class_to_idx
 
 
