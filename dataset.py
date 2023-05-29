@@ -177,7 +177,7 @@ class ApplyTransformDataset(torch.utils.data.Dataset):
                 torchvision.transforms.ToTensor(),
                 torchvision.transforms.Resize((64, 64), antialias=True),
                 # torchvision.transforms.RandomResizedCrop(64),
-                torchvision.transforms.RandomResizedCrop((64, 64), scale=(0.08, 1.0), ratio=(3 / 4, 4 / 3)),
+                torchvision.transforms.RandomResizedCrop((64, 64), scale=(0.08, 1.0), ratio=(3 / 4, 4 / 3), antialias=True),
                 torchvision.transforms.RandomRotation(degrees=(10)),
                 torchvision.transforms.RandomErasing(),
                 torchvision.transforms.Normalize(mean=self.mean, std=self.std),
